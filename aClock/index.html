@@ -1,0 +1,49 @@
+<!--
+ * @Descripttion: 
+ * @version: 
+ * @Author: cxq
+ * @Date: 2026-01-16 09:19:37
+ * @LastEditors: cxq
+ * @LastEditTime: 2026-01-16 11:30:41
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas时钟</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+        }
+        #clockCanvas {
+            border: 2px solid #cccccc;
+            border-radius: 50%;
+            cursor: crosshair;
+        }
+        .timeRange {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <canvas id="clockCanvas" width="400" height="400"></canvas>
+        <div class="timeRange">
+            选择的时间范围: <span id="timeRangeStart">--:--</span>
+            &nbsp;&nbsp;到&nbsp;&nbsp;
+            <span id="timeRangeEnd">--:--</span>
+            <span id="minutesDiff"></span>
+        </div>
+    </div>
+    <script type="module" src="clock.js"></script>
+</body>
+</html>
