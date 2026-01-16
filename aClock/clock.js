@@ -5,6 +5,15 @@ const timeRangeStartSpan = document.getElementById('timeRangeStart');
 const timeRangeEndSpan = document.getElementById('timeRangeEnd');
 const minutesDiffSpan = document.getElementById('minutesDiff');
 
+// 创建离屏画布（用于绘制静态元素）
+const offscreenCanvas = document.createElement('canvas');
+offscreenCanvas.width = canvas.width;
+offscreenCanvas.height = canvas.height;
+const offscreenCtx = offscreenCanvas.getContext('2d');
+
+// 标记静态画布是否需要更新
+let staticCanvasNeedsUpdate = true;
+
 // 导入dialog.js模块
 import { 
     showTimeRangeDialog, 
@@ -71,25 +80,34 @@ let dragStartAngle = 0;
 let dragEndAngle = 0;
 let selectedTimeRange = { start: null, end: null };
 
-// 绘制时钟
-function drawClock() {
-    // 清除画布
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// 绘制静态元素到离屏画布
+function drawStaticElements() {
+    // 清除离屏画布
+    offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
     
     // 绘制外环
-    drawOuterRing();
+    drawOuterRing(offscreenCtx);
     
     // 绘制内环
-    drawInnerRing();
+    drawInnerRing(offscreenCtx);
     
     // 绘制秒刻度
-    drawSecondMarks();
+    drawSecondMarks(offscreenCtx);
     
     // 绘制数字
-    drawNumbers();
+    drawNumbers(offscreenCtx);
     
     // 绘制中心点
-    drawCenter();
+    drawCenter(offscreenCtx);
+    
+    staticCanvasNeedsUpdate = false;
+}
+
+// 绘制动态元素（指针和时间范围）到主画布
+function drawDynamicElements() {
+    // 先绘制静态元素的内容
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(offscreenCanvas, 0, 0);
     
     // 绘制选择的时间范围
     if (selectedTimeRange.start !== null && selectedTimeRange.end !== null) {
@@ -100,21 +118,46 @@ function drawClock() {
     drawHands();
 }
 
+// 绘制时钟 - 优化版本
+function drawClock() {
+    // 如果静态画布需要更新，则先更新
+    if (staticCanvasNeedsUpdate) {
+        drawStaticElements();
+    }
+    
+    // 绘制动态元素
+    drawDynamicElements();
+}
+
+// 只绘制选择范围（不重绘整个时钟）
+function drawOnlySelectedRange() {
+    // 先绘制静态元素的内容（包含指针）
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(offscreenCanvas, 0, 0);
+    
+    // 只绘制选择的时间范围
+    if (selectedTimeRange.start !== null && selectedTimeRange.end !== null) {
+        drawSelectedRange(selectedTimeRange.start, selectedTimeRange.end);
+    }
+    
+    // 绘制当前时间指针（保持指针显示）
+    drawHands();
+}
+
 // 绘制外环
-function drawOuterRing() {
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, outerRingRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#cccccc';
+function drawOuterRing(drawingCtx = ctx) {
+    drawingCtx.beginPath();
+    drawingCtx.arc(centerX, centerY, outerRingRadius, 0, Math.PI * 2);
     
     // 绘制外环边框
-    ctx.strokeStyle = '#666666';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    drawingCtx.strokeStyle = '#666666';
+    drawingCtx.lineWidth = 2;
+    drawingCtx.stroke();
 }
 
 // 绘制秒刻度
-function drawSecondMarks() {
-    ctx.strokeStyle = '#cccccc';
+function drawSecondMarks(drawingCtx = ctx) {
+    drawingCtx.strokeStyle = '#cccccc';
     
     for (let i = 0; i < 60; i++) {
         const angle = i * Math.PI / 30; // 每6度一个刻度
@@ -123,50 +166,50 @@ function drawSecondMarks() {
         // 每5秒的刻度长一些，其他秒的刻度短一些
         const endRadius = i % 5 === 0 ? outerRingRadius * 0.88 : outerRingRadius * 0.9;
         
-        ctx.beginPath();
-        ctx.moveTo(
+        drawingCtx.beginPath();
+        drawingCtx.moveTo(
             centerX + Math.cos(angle) * startRadius,
             centerY + Math.sin(angle) * startRadius
         );
-        ctx.lineTo(
+        drawingCtx.lineTo(
             centerX + Math.cos(angle) * endRadius,
             centerY + Math.sin(angle) * endRadius
         );
-        ctx.lineWidth = i % 5 === 0 ? 3 : 1;
-        ctx.stroke();
+        drawingCtx.lineWidth = i % 5 === 0 ? 3 : 1;
+        drawingCtx.stroke();
     }
 }
 
 // 绘制数字
-function drawNumbers() {
-    ctx.font = '20px Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+function drawNumbers(drawingCtx = ctx) {
+    drawingCtx.font = '20px Arial';
+    drawingCtx.fillStyle = '#ffffff';
+    drawingCtx.textAlign = 'center';
+    drawingCtx.textBaseline = 'middle';
     
     for (let i = 1; i <= 12; i++) {
         const angle = (i - 3) * Math.PI / 6; // 从3点开始
         const x = centerX + Math.cos(angle) * numberRingRadius;
         const y = centerY + Math.sin(angle) * numberRingRadius;
-        ctx.fillText(i.toString(), x, y);
+        drawingCtx.fillText(i.toString(), x, y);
     }
 }
 
 // 绘制内环
-function drawInnerRing() {
+function drawInnerRing(drawingCtx = ctx) {
     // 绘制外环
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, innerRingOuterRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#666666';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    drawingCtx.beginPath();
+    drawingCtx.arc(centerX, centerY, innerRingOuterRadius, 0, Math.PI * 2);
+    drawingCtx.strokeStyle = '#666666';
+    drawingCtx.lineWidth = 2;
+    drawingCtx.stroke();
     
     // 绘制内环
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, innerRingInnerRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#555555';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    drawingCtx.beginPath();
+    drawingCtx.arc(centerX, centerY, innerRingInnerRadius, 0, Math.PI * 2);
+    drawingCtx.strokeStyle = '#555555';
+    drawingCtx.lineWidth = 2;
+    drawingCtx.stroke();
 }
 
 // 绘制指针
@@ -201,25 +244,38 @@ function drawHand(angle, length, width, color) {
 }
 
 // 绘制中心点
-function drawCenter() {
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
+function drawCenter(drawingCtx = ctx) {
+    drawingCtx.beginPath();
+    drawingCtx.arc(centerX, centerY, 5, 0, Math.PI * 2);
+    drawingCtx.fillStyle = '#ffffff';
+    drawingCtx.fill();
 }
 
 // 绘制选择的时间范围
 function drawSelectedRange(startAngle, endAngle) {
+    // 对角度进行四舍五入，减少微小波动导致的抖动
+    const normalizedStart = Math.round(startAngle * 100) / 100;
+    const normalizedEnd = Math.round(endAngle * 100) / 100;
+    
+    // 计算角度差，确保绘制正确的圆弧
+    let drawStart = normalizedStart;
+    let drawEnd = normalizedEnd;
+    
+    // 如果结束角度小于起始角度，添加2π使其大于起始角度
+    if (drawEnd < drawStart) {
+        drawEnd += Math.PI * 2;
+    }
+    
     ctx.beginPath();
-    ctx.arc(centerX, centerY, (innerRingOuterRadius + innerRingInnerRadius) / 2, startAngle, endAngle);
+    ctx.arc(centerX, centerY, (innerRingOuterRadius + innerRingInnerRadius) / 2, drawStart, drawEnd);
     ctx.strokeStyle = '#00aaff';
     ctx.lineWidth = innerRingOuterRadius - innerRingInnerRadius;
     ctx.lineCap = 'butt';
     ctx.stroke();
     
     // 绘制起始点和结束点标记
-    drawRangeMarker(startAngle, '#00ff00');
-    drawRangeMarker(endAngle, '#ff0000');
+    drawRangeMarker(normalizedStart, '#00ff00');
+    drawRangeMarker(normalizedEnd, '#ff0000');
 }
 
 // 绘制时间范围标记
@@ -250,7 +306,9 @@ function getAngleFromMouse(event) {
     if (angle < 0) {
         angle += Math.PI * 2;
     }
-    return angle;
+    // 四舍五入到小数点后2位，减少精度波动导致的抖动
+    // 约1.15度的精度，对于时钟来说已经足够精确
+    return Math.round(angle * 100) / 100;
 }
 
 // 检查鼠标是否在内环区域
@@ -380,17 +438,50 @@ canvas.addEventListener('mousedown', (event) => {
 canvas.addEventListener('mousemove', (event) => {
     if (isDragging) {
         const currentAngle = getAngleFromMouse(event);
+        let newStartAngle = dragStartAngle;
+        let newEndAngle = dragEndAngle;
+        
         if (dragType === 'start') {
-            dragStartAngle = currentAngle;
+            // 直接使用四舍五入后的角度，已经足够稳定
+            newStartAngle = currentAngle;
+            
+            // 确保起始角度变化后，结束角度仍然大于起始角度
+            if (newEndAngle < newStartAngle) {
+                newEndAngle += Math.PI * 2;
+            }
         } else if (dragType === 'end') {
-            dragEndAngle = currentAngle;
+            // 直接使用四舍五入后的角度，已经足够稳定
+            newEndAngle = currentAngle;
+            
+            // 确保结束角度始终大于起始角度
+            if (newEndAngle < newStartAngle) {
+                newEndAngle += Math.PI * 2;
+            }
         } else {
             // 创建新的时间范围
-            dragEndAngle = currentAngle;
+            // 直接使用四舍五入后的角度，已经足够稳定
+            newEndAngle = currentAngle;
+            
+            // 确保结束角度始终大于起始角度
+            if (newEndAngle < newStartAngle) {
+                newEndAngle += Math.PI * 2;
+            }
         }
-        selectedTimeRange = { start: dragStartAngle, end: dragEndAngle };
-        updateTimeRangeDisplay(dragStartAngle, dragEndAngle);
-        drawClock();
+        
+        // 只有当角度确实发生变化时才更新和重绘
+        // 由于已经进行了四舍五入，微小变化会被过滤掉
+        if (Math.abs(newStartAngle - dragStartAngle) > 0.01 || Math.abs(newEndAngle - dragEndAngle) > 0.01) {
+            // 立即更新角度变量
+            dragStartAngle = newStartAngle;
+            dragEndAngle = newEndAngle;
+            
+            // 立即更新时间范围
+            selectedTimeRange = { start: newStartAngle, end: newEndAngle };
+            updateTimeRangeDisplay(newStartAngle, newEndAngle);
+            
+            // 只绘制选择范围，不重绘整个时钟
+            drawOnlySelectedRange();
+        }
     }
     
     // 更新鼠标指针样式
@@ -404,6 +495,7 @@ canvas.addEventListener('mousemove', (event) => {
 
 canvas.addEventListener('mouseup', () => {
     if (isDragging) {
+        console.log(centerX)
         isDragging = false;
         dragType = null;
         // 确保结束角度大于起始角度
@@ -424,9 +516,17 @@ canvas.addEventListener('mouseleave', () => {
 
 // 初始化
 function init() {
-    drawClock();
-    // 每秒更新一次
-    setInterval(drawClock, 1000);
+    // 先绘制静态元素
+    drawStaticElements();
+    
+    // 绘制动态元素
+    drawDynamicElements();
+    
+    // 每秒更新一次动态元素（主要是指针）
+    setInterval(() => {
+        // 标记静态画布不需要更新，只更新动态元素
+        drawDynamicElements();
+    }, 1000);
     
     // 初始化对话框事件
     initDialogEvents();
