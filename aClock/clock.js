@@ -97,9 +97,6 @@ function drawStaticElements() {
     // 绘制数字
     drawNumbers(offscreenCtx);
     
-    // 绘制中心点
-    drawCenter(offscreenCtx);
-    
     staticCanvasNeedsUpdate = false;
 }
 
@@ -188,7 +185,7 @@ function drawNumbers(drawingCtx = ctx) {
     drawingCtx.textBaseline = 'middle';
     
     for (let i = 1; i <= 12; i++) {
-        const angle = (i - 3) * Math.PI / 6; // 从3点开始
+        const angle = (i - 3) * Math.PI / 6;
         const x = centerX + Math.cos(angle) * numberRingRadius;
         const y = centerY + Math.sin(angle) * numberRingRadius;
         drawingCtx.fillText(i.toString(), x, y);
@@ -230,6 +227,9 @@ function drawHands() {
     // 绘制秒针 - 12点方向
     const secondAngle = seconds * Math.PI / 30 - Math.PI / 2;
     drawHand(secondAngle, radius * 0.88, 2, '#ff0000');
+    
+    // 绘制中心点
+    drawCenter();
 }
 
 // 绘制单根指针
@@ -244,11 +244,11 @@ function drawHand(angle, length, width, color) {
 }
 
 // 绘制中心点
-function drawCenter(drawingCtx = ctx) {
-    drawingCtx.beginPath();
-    drawingCtx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-    drawingCtx.fillStyle = '#ffffff';
-    drawingCtx.fill();
+function drawCenter() {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
 }
 
 // 绘制选择的时间范围
