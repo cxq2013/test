@@ -328,6 +328,29 @@ function isOnTimeMarker(event) {
     }
     
     if(isInInnerRing(event)) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const markerRadius = 5;
+        const markerDistance = innerRingOuterRadius;
+        
+        // 检查起始点标记
+        const startX = centerX + Math.cos(selectedTimeRange.start) * markerDistance;
+        const startY = centerY + Math.sin(selectedTimeRange.start) * markerDistance;
+        const startDistance = Math.sqrt((mouseX - startX) ** 2 + (mouseY - startY) ** 2);
+        
+        if (startDistance <= markerRadius) {
+            return 'start';
+        }
+        
+        // 检查结束点标记
+        const endX = centerX + Math.cos(selectedTimeRange.end) * markerDistance;
+        const endY = centerY + Math.sin(selectedTimeRange.end) * markerDistance;
+        const endDistance = Math.sqrt((mouseX - endX) ** 2 + (mouseY - endY) ** 2);
+        
+        if (endDistance <= markerRadius) {
+            return 'end';
+        }
         // 计算当前位置是否在时间范围标记上
         const currentAngle = getAngleFromMouse(event);
         const endAngle = selectedTimeRange.end > selectedTimeRange.start ? selectedTimeRange.end : selectedTimeRange.end + Math.PI * 2;
@@ -403,8 +426,9 @@ canvas.addEventListener('mousedown', (event) => {
     if (markerType) {
         console.log('点击了时间范围标记', markerType);
         isDragging = true;
-        dragType = markerType.type;
-        selectedTimeRangeMouseAngle = markerType.mouseAngle;
+        dragType = markerType.type ? markerType.type : markerType;
+        console.log('dragType', dragType);
+        markerType.type && (selectedTimeRangeMouseAngle = markerType.mouseAngle);
         drawClock();
     } else if (isInInnerRing(event)) {
         // 如果没有点击在标记上，则创建新的时间范围
@@ -444,7 +468,6 @@ canvas.addEventListener('mousemove', (event) => {
             const angleDiff = currentAngle - selectedTimeRangeMouseAngle;
             newStartAngle += angleDiff;
             newEndAngle += angleDiff;
-            console.log(angleDiff, currentAngle, selectedTimeRangeMouseAngle)
             // 更新鼠标角度为当前角度，用于后续拖动
             selectedTimeRangeMouseAngle = currentAngle;
         } else {
