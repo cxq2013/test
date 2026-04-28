@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "time-range-dialog":"/components/time-range-dialog/time-range-dialog"
+  }
+}

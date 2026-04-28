@@ -1,0 +1,25 @@
+<!-- index.wxml -->
+<view class="container">
+  <canvas canvas-id="clockCanvas" 
+          class="clockCanvas"
+          bindtouchstart="onTouchStart"
+          bindtouchmove="onTouchMove"
+          bindtouchend="onTouchEnd"
+          bindtouchcancel="onTouchCancel">
+  </canvas>
+  <view class="timeRange">
+    选择的时间范围: 
+    <text class="timeText" bindtap="showTimeRangeDialog">{{timeRangeStart}}</text>
+      到  
+    <text class="timeText" bindtap="showTimeRangeDialog">{{timeRangeEnd}}</text>
+    <text class="minutesDiff">{{minutesDiff}}</text>
+    <text wx:if="{{showDialog}}">123123</text>
+  </view>
+  
+  <!-- 时间范围选择对话框 -->
+  <time-range-dialog 
+    wx:if="{{showDialog}}"
+    bind:confirm="onDialogConfirm"
+    bind:cancel="onDialogCancel">
+  </time-range-dialog>
+</view>
